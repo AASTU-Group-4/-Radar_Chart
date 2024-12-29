@@ -1,46 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dynamic Radar Chart</title>
-  <link rel="stylesheet" href="styles.css"> <!-- Reference to the CSS file -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Radar Chart</title>
+    <link rel="stylesheet" href="style.css"> <!-- Reference to the CSS file -->
 </head>
 <body>
-  <header>
-  <h1>Radar Chart Input Form</h1>
-  </header>
-  <form id="chartForm">
-      <fieldset>
-          <legend>Enter Your Data for the Radar Chart</legend>
+    <header>
+        <h1>Radar Chart Input Form</h1>
+    </header>
+    <form id="chartForm">
+        <fieldset>
+            <legend>Enter Your Data for the Radar Chart</legend>
+            <label for="name">Name:</label>
+            <input id="name" type="text" name="name" placeholder="Enter your name" required><br>
+            <label for="chartColor">Chart Color:</label>
+            <input id="chartColor" type="color" name="chartColor" value="#ff0000"><br><br>
+            <div id="fields-container">
+                <!-- Fields will be added here dynamically -->
+            </div>
+            <button type="button" id="addField">Add Field</button>
+            <button type="submit">Generate Chart</button>
+        </fieldset>
+    </form>
 
-          <label for="name">Name:</label>
-          <input id="name" type="text" name="name" placeholder="Enter your name" required><br><br>
-          
-          <label for="maths">Maths:</label>
-          <input type="range" id="maths" name="maths" min="1" max="100" required><br><br>
-
-          <label for="science">Science:</label>
-          <input type="range" id="science" name="science" min="1" max="100" required><br><br>
-          
-          <label for="social">Social Studies:</label>
-          <input type="range" id="social" name="social" min="1" max="100" required><br><br>
-          
-          <label for="music">Music:</label>
-          <input type="range" id="music" name="music" min="1" max="100" required><br><br>
-          
-          <label for="art">Art:</label>
-          <input type="range" id="art" name="art" min="1" max="100" required><br><br>
-         
-          <button type="submit">Submit</button>
-      </fieldset>
-  </form>
-
-
-    <!-- Canvas for Chart -->
     <canvas id="radarChart" width="600" height="600"></canvas>
 
-
-  <script src="script.js"></script> <!-- Reference to the JavaScript file -->
+    <script src="script.js"></script>
 </body>
 </html>

@@ -1,181 +1,176 @@
+function createField(fieldName = "", fieldValue = 50) {
+  const container = document.createElement("div");
+  container.className = "field-group";
 
-// Function to capture and validate user input data
-function getChartData() {
-    const name = document.getElementById('name').value.trim();
-    const maths = parseInt(document.getElementById('maths').value);
-    const science = parseInt(document.getElementById('science').value);
-    const social = parseInt(document.getElementById('social').value);
-    const music = parseInt(document.getElementById('music').value);
-    const art = parseInt(document.getElementById('art').value);
+  const label = document.createElement("input");
+  label.type = "text";
+  label.placeholder = "Enter field name";
+  label.value = fieldName;
+  label.required = true;
 
-    // Validate the input data
-    if (!name || isNaN(maths) || isNaN(science) || isNaN(social) || isNaN(music) || isNaN(art)) {
-        alert("Please fill out all fields correctly.");
-        return null;
-    }
+  const range = document.createElement("input");
+  range.type = "range";
+  range.min = "1";
+  range.max = "100";
+  range.value = fieldValue;
+  range.required = true;
 
-    // Prepare data for radar chart
-    const labels = ['Maths', 'Science', 'Social Studies', 'Music', 'Art'];
-    const values = [maths, science, social, music, art];
+  const removeBtn = document.createElement("button");
+  removeBtn.type = "button";
+  removeBtn.className = "remove-field";
+  removeBtn.textContent = "×";
+  removeBtn.onclick = () => container.remove();
 
-    return { name, labels, values };
+  container.appendChild(label);
+  container.appendChild(range);
+  container.appendChild(removeBtn);
+
+  return container;
 }
 
-// Event listener for the form submission
-document.getElementById('chartForm').addEventListener('submit', function(event) {
-    event.preventDefault(); 
-    const chartData = getChartData();
-    if (chartData) {
-        
-        // Call your function to render the radar chart here
+function getChartData() {
+  const name = document.getElementById("name").value.trim();
+  const chartColor = document.getElementById("chartColor").value;
+  const fieldGroups = document.querySelectorAll(".field-group");
+
+  if (fieldGroups.length === 0) {
+    alert("Please add at least one field.");
+    return null;
+  }
+
+  const labels = [];
+  const values = [];
+
+  fieldGroups.forEach((group) => {
+    const label = group.querySelector('input[type="text"]').value.trim();
+    const value = parseInt(group.querySelector('input[type="range"]').value);
+
+    if (label && !isNaN(value)) {
+      labels.push(label);
+      values.push(value);
     }
+  });
+
+  if (labels.length === 0) {
+    alert("Please fill out all fields correctly.");
+    return null;
+  }
+
+  return { name, labels, values, chartColor };
+}
+
+const form = document.getElementById("chartForm");
+const fieldsContainer = document.getElementById("fields-container");
+const addFieldBtn = document.getElementById("addField");
+const radarCanvas = document.getElementById("radarChart");
+const ctx = radarCanvas.getContext("2d");
+const width = radarCanvas.width;
+const height = radarCanvas.height;
+const centerX = Math.floor(width / 2);
+const centerY = Math.floor(height / 2);
+const radius = Math.min(width, height) / 3;
+const maxScore = 100;
+const levels = 5;
+
+// Add initial fields
+fieldsContainer.appendChild(createField("Maths"));
+fieldsContainer.appendChild(createField("Science"));
+fieldsContainer.appendChild(createField("Social Studies"));
+
+addFieldBtn.addEventListener("click", () => {
+  fieldsContainer.appendChild(createField());
 });
 
-// Radar chart rendering logic
+function drawLine(x0, y0, x1, y1, color = "black") {
+  ctx.beginPath();
+  ctx.moveTo(x0, y0);
+  ctx.lineTo(x1, y1);
+  ctx.strokeStyle = color;
+  ctx.stroke();
+}
 
-document.addEventListener("DOMContentLoaded", () => {
-    const form = document.getElementById("chartForm");
-    const radarCanvas = document.getElementById("radarChart");
-    const ctx = radarCanvas.getContext("2d");
-    const width = radarCanvas.width;
-    const height = radarCanvas.height;
-    const centerX = Math.floor(width / 2);
-    const centerY = Math.floor(height / 2);
-    const radius = Math.min(width, height) / 3; // Dynamically fit canvas
-    const maxScore = 100; // Maximum score for normalization
-    const levels = 5; // Number of concentric levels in the radar chart
+function drawGrid(sides) {
+  const angleStep = (2 * Math.PI) / sides;
+  for (let level = 1; level <= levels; level++) {
+    const r = (radius / levels) * level;
+    drawPolygon(sides, r, "gray");
+  }
 
-    // Bresenham's Line Algorithm
-    function drawLine(x0, y0, x1, y1, color = "black") {
-        let dx = Math.abs(x1 - x0),
-            dy = Math.abs(y1 - y0);
-        let sx = x0 < x1 ? 1 : -1;
-        let sy = y0 < y1 ? 1 : -1;
-        let err = dx - dy;
+  for (let i = 0; i < sides; i++) {
+    const x = centerX + radius * Math.cos(i * angleStep);
+    const y = centerY + radius * Math.sin(i * angleStep);
+    drawLine(centerX, centerY, x, y, "black");
+  }
+}
 
-        ctx.fillStyle = color;
-        while (true) {
-            ctx.fillRect(x0, y0, 1, 1); // Plot pixel
-            if (x0 === x1 && y0 === y1) break;
-            let e2 = 2 * err;
-            if (e2 > -dy) {
-                err -= dy;
-                x0 += sx;
-            }
-            if (e2 < dx) {
-                err += dx;
-                y0 += sy;
-            }
-        }
-    }
+function drawPolygon(sides, r, color) {
+  const angleStep = (2 * Math.PI) / sides;
+  ctx.beginPath();
+  ctx.moveTo(centerX + r * Math.cos(0), centerY + r * Math.sin(0));
 
-    // Midpoint Circle Algorithm
-    function drawCircle(cx, cy, r, color = "black") {
-        let x = r,
-            y = 0,
-            p = 1 - r;
+  for (let i = 1; i <= sides; i++) {
+    ctx.lineTo(
+      centerX + r * Math.cos(i * angleStep),
+      centerY + r * Math.sin(i * angleStep)
+    );
+  }
 
-        while (x >= y) {
-            plotCirclePoints(cx, cy, x, y, color);
-            y++;
-            if (p <= 0) {
-                p += 2 * y + 1;
-            } else {
-                x--;
-                p += 2 * y - 2 * x + 1;
-            }
-        }
-    }
+  ctx.strokeStyle = color;
+  ctx.stroke();
+}
 
-    function plotCirclePoints(cx, cy, x, y, color) {
-        ctx.fillStyle = color;
-        ctx.fillRect(cx + x, cy + y, 1, 1);
-        ctx.fillRect(cx - x, cy + y, 1, 1);
-        ctx.fillRect(cx + x, cy - y, 1, 1);
-        ctx.fillRect(cx - x, cy - y, 1, 1);
-        ctx.fillRect(cx + y, cy + x, 1, 1);
-        ctx.fillRect(cx - y, cy + x, 1, 1);
-        ctx.fillRect(cx + y, cy - x, 1, 1);
-        ctx.fillRect(cx - y, cy - x, 1, 1);
-    }
+function drawData(values, labels, color) {
+  const angleStep = (2 * Math.PI) / values.length;
 
-    // Draw the radar chart grid
-    function drawGrid(sides) {
-        const angleStep = (2 * Math.PI) / sides;
-        for (let level = 1; level <= levels; level++) {
-            const r = (radius / levels) * level;
-            drawPolygon(sides, r, "gray");
-        }
+  // Draw filled area
+  ctx.beginPath();
+  ctx.moveTo(
+    centerX + (values[0] / maxScore) * radius * Math.cos(0),
+    centerY + (values[0] / maxScore) * radius * Math.sin(0)
+  );
 
-        // Draw radial lines
-        for (let i = 0; i < sides; i++) {
-            const x = centerX + radius * Math.cos(i * angleStep);
-            const y = centerY + radius * Math.sin(i * angleStep);
-            drawLine(centerX, centerY, Math.floor(x), Math.floor(y), "black");
-        }
-    }
+  for (let i = 1; i <= values.length; i++) {
+    const r = (values[i % values.length] / maxScore) * radius;
+    const x = centerX + r * Math.cos(i * angleStep);
+    const y = centerY + r * Math.sin(i * angleStep);
+    ctx.lineTo(x, y);
+  }
 
-    // Draw a polygon with a specified number of sides and radius
-    function drawPolygon(sides, r, color) {
-        const angleStep = (2 * Math.PI) / sides;
-        let x1 = centerX + r * Math.cos(0);
-        let y1 = centerY + r * Math.sin(0);
+  ctx.fillStyle = color + "33"; // Add transparency
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.stroke();
 
-        for (let i = 1; i <= sides; i++) {
-            const x2 = centerX + r * Math.cos(i * angleStep);
-            const y2 = centerY + r * Math.sin(i * angleStep);
-            drawLine(Math.floor(x1), Math.floor(y1), Math.floor(x2), Math.floor(y2), color);
-            x1 = x2;
-            y1 = y2;
-        }
-    }
+  // Draw points and labels
+  for (let i = 0; i < values.length; i++) {
+    const r = (values[i] / maxScore) * radius;
+    const x = centerX + r * Math.cos(i * angleStep);
+    const y = centerY + r * Math.sin(i * angleStep);
 
-    // Plot the data points
-    function drawData(values, labels) {
-        const angleStep = (2 * Math.PI) / values.length;
-        let x1 = centerX + (values[0] / maxScore) * radius * Math.cos(0);
-        let y1 = centerY + (values[0] / maxScore) * radius * Math.sin(0);
+    ctx.fillStyle = color;
+    ctx.fillRect(x - 2, y - 2, 4, 4);
 
-        for (let i = 1; i <= values.length; i++) {
-            const r = (values[i % values.length] / maxScore) * radius;
-            const x2 = centerX + r * Math.cos(i * angleStep);
-            const y2 = centerY + r * Math.sin(i * angleStep);
-            drawLine(Math.floor(x1), Math.floor(y1), Math.floor(x2), Math.floor(y2), "red");
-            ctx.fillStyle = "blue";
-            ctx.fillRect(Math.floor(x2) - 2, Math.floor(y2) - 2, 4, 4); // Marker
+    const labelX = centerX + (radius + 20) * Math.cos(i * angleStep);
+    const labelY = centerY + (radius + 20) * Math.sin(i * angleStep);
+    ctx.fillStyle = "black";
+    ctx.fillText(labels[i], labelX, labelY);
+  }
+}
 
+function drawTitle(name) {
+  ctx.font = "20px Arial";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "black";
+  ctx.fillText(name, centerX, 30);
+}
 
-            // Draw labels near the edges
-            const labelX = centerX + (radius + 20) * Math.cos(i * angleStep);
-            const labelY = centerY + (radius + 20) * Math.sin(i * angleStep);
-            ctx.fillStyle = "black";
-            ctx.fillText(labels[i % labels.length], labelX, labelY);
-
-            x1 = x2;
-            y1 = y2;
-        }
-    }
-
-    // Form submission handler
-    form.addEventListener("submit", (event) => {
-        event.preventDefault();
-
-        const formData = new FormData(form);
-        const labels = [];
-        const values = [];
-
-        formData.forEach((value, key) => {
-            if (key !== "name") {
-                labels.push(key);
-                values.push(parseInt(value, 10));
-            }
-        });
-
-        // Clear the canvas
-        ctx.clearRect(0, 0, width, height);
-
-        // Draw the radar chart
-        drawGrid(labels.length); // Grid and axes
-        drawData(values, labels); // Plot data
-    });
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const chartData = getChartData();
+  if (chartData) {
+    ctx.clearRect(0, 0, width, height);
+    drawTitle(chartData.name);
+    drawGrid(chartData.labels.length);
+    drawData(chartData.values, chartData.labels, chartData.chartColor);
+  }
 });
